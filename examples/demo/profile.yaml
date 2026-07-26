@@ -1,0 +1,22 @@
+# Synthetic fixture for software demonstration only. Do not use as a biological profile.
+name: synthetic-segmented-demo
+segmented: true
+reference_fasta: reference.fasta
+vaccine_reference_fasta: vaccine.fasta
+lineage_references: lineages.fasta
+lineage_min_margin: 0.01
+
+coding_regions:
+  - {name: HA, segment: HA, start: 1, end: 30, strand: 1}
+  - {name: NA, segment: NA, start: 1, end: 30, strand: 1}
+
+antigenic_sites:
+  HA: [2, 4]
+  NA: [3]
+
+escape_markers:
+  HA:
+    - mutation: K2N
+      weight: 1.0
+      evidence: "Synthetic test fixture; not biological evidence"
+
