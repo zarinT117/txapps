@@ -1,4 +1,4 @@
-# Synthetic fixture for software demonstration only. Do not use as a biological profile.
+# Synthetic unit-test fixture only. Never use for research samples.
 name: synthetic-segmented-demo
 segmented: true
 reference_fasta: reference.fasta
@@ -19,4 +19,3 @@ escape_markers:
     - mutation: K2N
       weight: 1.0
       evidence: "Synthetic test fixture; not biological evidence"
-

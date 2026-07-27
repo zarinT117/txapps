@@ -1,0 +1,27 @@
+# SARS-CoV-2 profile scaffold.
+# The reference FASTA header must be MN908947.3, or update the segment values below to match.
+name: sars-cov-2
+segmented: false
+reference_fasta: datasets/sars-cov-2/reference.fasta
+lineage_min_margin: 0.002
+
+coding_regions:
+  - name: S
+    segment: MN908947.3
+    start: 21563
+    end: 25384
+    strand: 1
+  - name: N
+    segment: MN908947.3
+    start: 28274
+    end: 29533
+    strand: 1
+
+# Fill these from a versioned, cited surveillance profile before biological interpretation.
+antigenic_sites:
+  S: []
+  N: []
+
+escape_markers:
+  S: []
+  N: []

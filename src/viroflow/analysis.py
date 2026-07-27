@@ -250,7 +250,7 @@ def analyze_genome(
         "changed_antigenic_sites": changed_antigenic_sites,
         "configured_antigenic_sites": total_antigenic_sites,
         "amino_acid_divergence": round(aa_divergence, 6),
-        "formula": "60×antigenic-site change fraction + 40×min(1, AA divergence/0.05)",
+        "formula": "60*antigenic-site change fraction + 40*min(1, AA divergence/0.05)",
     }
 
     vaccine_path = resolve_path(profile, profile.get("vaccine_reference_fasta"))
@@ -320,4 +320,3 @@ def analyze_genome(
         vaccine_escape_screen=escape,
         warnings=warnings,
     )
-

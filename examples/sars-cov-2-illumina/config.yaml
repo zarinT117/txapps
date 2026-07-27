@@ -1,0 +1,27 @@
+workflow:
+  samples: samples.csv
+  reference_fasta: datasets/sars-cov-2/reference.fasta
+  output_dir: results
+  threads: 8
+  min_read_length: 50
+  min_depth: 10
+  min_variant_quality: 30
+  nextclade_dataset: datasets/sars-cov-2
+  # Optional for clinical/host-associated material:
+  # host_reference_fasta: references/GRCh38.primary_assembly.genome.fa
+  # Optional for amplicon assays; use the exact BED matching the laboratory scheme:
+  # primer_bed: references/primers.bed
+  # primer_min_length: 30
+  # primer_min_quality: 20
+
+minor_variants:
+  enabled: false
+  min_frequency: 0.03
+  min_depth: 100
+  min_base_quality: 20
+
+provenance:
+  hash_inputs: true
+
+analysis:
+  profile: profile.yaml
