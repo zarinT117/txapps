@@ -1,34 +1,17 @@
 # ViroFlow
 
-ViroFlow is an installable command-line workflow for viral whole-genome sequencing. It
-connects raw-read QC and assembly to haploid variant calling, masked consensus generation,
-genotyping, and configurable antigenic evidence screening.
+ViroFlow is an installable viral-genome analysis workflow by **Tasnim Zarin**. It connects raw
+reads to read QC, host depletion, de novo assembly, alignment, variant calling, consensus
+generation, genotype evidence, antigenic drift/shift screening, vaccine-escape prioritization,
+and optional machine-learning triage.
 
-The repository is pathogen-agnostic: the executable workflow is reusable, while biological
-interpretation comes from a versioned **analysis profile** containing the correct reference,
-coding coordinates, lineage references, antigenic sites, vaccine sequence, and evidence-linked
-mutations for the virus being studied.
+The software is pathogen-agnostic. Biological interpretation comes from versioned analysis
+profiles supplied by the researcher: reference sequences, coding coordinates, lineage references,
+antigenic sites, vaccine references, and evidence-cited escape markers.
 
-## What it produces
+## Install after git clone
 
-For each sample, `viroflow run` creates:
-
-- QC-filtered reads and an HTML/JSON QC report
-- de novo contigs (`MEGAHIT` for Illumina; `Flye` for Nanopore)
-- reference-aligned BAM and all-position depth table
-- raw and depth/quality-filtered haploid VCF
-- a reference-guided consensus with low-depth regions masked as `N`
-- optional Nextclade clade/lineage and QC output from a pinned local dataset
-- JSON, TSV, and standalone HTML comparative-analysis reports
-- a machine-readable run manifest containing every command and threshold
-
-The comparative report includes nucleotide and amino-acid changes, configured antigenic-site
-changes, best-reference segment genotype calls, a segmented-virus reassortment/shift screen,
-and a transparent vaccine-escape prioritization score.
-
-## Install after `git clone`
-
-The full workflow runs on Linux or WSL with Conda/Mamba:
+Full raw-read workflows require Linux or WSL with Conda/Mamba:
 
 ```bash
 git clone https://github.com/zarinT117/txapps.git
@@ -39,37 +22,47 @@ viroflow --version
 viroflow doctor
 ```
 
-The sequence-analysis/reporting layer also works without the external bioinformatics tools:
+For analysis/reporting and ML utilities only:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install .
+python -m pip install -e ".[ml]"
 ```
 
-## Quick demonstration
+Every normal command prints the runtime banner:
 
-The repository includes a tiny synthetic, two-segment fixture:
-
-```bash
-viroflow analyze \
-  --profile examples/demo/profile.yaml \
-  --input examples/demo/query.fasta \
-  --sample synthetic-demo \
-  --output demo-results
+```text
+ViroFlow 0.2.0 | Author: Tasnim Zarin <tasnim.2001040@bau.edu.bd>
 ```
 
-Open `demo-results/report.html`. The fixture deliberately gives one segment its closest match
-in `lineage_A` and another in `lineage_B`, exercising the reassortment-candidate screen. It is
-software test data, not a biological reference.
+## What it produces
 
-## Configure a real project
+For each sample, `viroflow run` writes:
 
-Create starter files:
+- filtered reads and upstream QC files
+- optional host-depleted reads
+- MEGAHIT or Flye de novo contigs
+- minimap2/samtools BAM, index, flagstat, and all-position depth
+- BCFtools raw, normalized, filtered, indexed VCF plus VCF stats
+- low-depth-masked consensus FASTA
+- optional iVar primer-trimmed BAM and minor-variant TSV
+- optional Nextclade output from a pinned local dataset
+- JSON, TSV, and standalone HTML antigenic evidence reports
+- QC summary, cohort summary, and a provenance manifest with command history, thresholds,
+  input SHA256 hashes, tool paths, and tool versions
+
+## Create a project
 
 ```bash
 viroflow init my-virus-project
 cd my-virus-project
+```
+
+For SARS-CoV-2 Illumina surveillance scaffolding:
+
+```bash
+viroflow init sars2-project --preset sars-cov-2
 ```
 
 Edit `samples.csv`:
@@ -80,47 +73,25 @@ case01,reads/case01_R1.fastq.gz,reads/case01_R2.fastq.gz,illumina
 case02,reads/case02.fastq.gz,,nanopore
 ```
 
-Place a curated reference in `references/reference.fasta`, then edit `config.yaml` and
-`profile.yaml`. Inspect the complete execution plan before spending compute:
+Validate and run:
 
 ```bash
+viroflow validate --config config.yaml
 viroflow run --config config.yaml --dry-run
-viroflow run --config config.yaml
+viroflow run --config config.yaml --resume
 ```
 
 Paths in YAML and CSV files are resolved relative to the YAML file. FASTA record IDs must match
-the profile's segment names. Coding coordinates and amino-acid positions are 1-based and
-inclusive.
+profile segment names. Coordinates and amino-acid positions are 1-based and inclusive.
 
-### Genotype references
+## Genotyping, drift, shift, and escape evidence
 
-`lineage_references` is a multi-record FASTA whose IDs use `lineage|segment`:
+`lineage_references` is a FASTA with IDs in `lineage|segment` form. ViroFlow assigns each segment
+to the closest configured reference and reports the identity margin. Segmented viruses with
+confident segment calls from multiple lineages are flagged as candidate reassortment signals that
+need phylogenetic, read-level, contamination, and epidemiologic confirmation.
 
-```text
->lineage_A|HA
-...
->lineage_A|NA
-...
->lineage_B|HA
-...
-```
-
-ViroFlow reports the closest reference for each segment and its identity margin over the
-runner-up. For segmented viruses, confident calls to multiple lineages are flagged as a
-**candidate reassortment signal**. Confirm candidates with segment-specific phylogenetics,
-read-level mixture/contamination checks, and epidemiologic context.
-
-For supported pathogens, configure `workflow.nextclade_dataset` to a downloaded, versioned
-Nextclade dataset. Pinning the local dataset makes genotype results reproducible:
-
-```bash
-nextclade dataset get --name '<dataset-name>' --output-dir datasets/my-dataset
-```
-
-### Antigenic and vaccine-escape profile
-
-Profiles define antigenic positions and evidence-linked markers rather than baking a
-single-virus marker list into the software:
+Profiles also define antigenic sites and evidence-linked escape markers:
 
 ```yaml
 antigenic_sites:
@@ -133,52 +104,67 @@ escape_markers:
       evidence: "PMID:00000000"
 ```
 
-Every marker must include a citation. Keep profiles under version control and review them when
-surveillance or experimental evidence changes.
-
-The reported escape score is an auditable triage index:
+The escape score is an auditable triage index:
 
 ```text
-70 × matched-marker-weight fraction
-+ 20 × configured-antigenic-site change fraction
-+ 10 × min(1, vaccine nucleotide distance / 0.05)
+70 * matched-marker-weight fraction
++ 20 * configured-antigenic-site change fraction
++ 10 * min(1, vaccine nucleotide distance / 0.05)
 ```
 
-It is a ranking aid, not a probability, neutralization titre, vaccine-effectiveness estimate,
-or clinical conclusion.
+It is not a neutralization estimate, vaccine-effectiveness model, clinical conclusion, or public
+health decision rule.
 
-## Workflow outline
+## Machine learning
 
-```text
-FASTQ
-  ├─ fastp (Illumina) / Filtlong (Nanopore)
-  ├─ MEGAHIT / Flye ───────────────> de novo contigs
-  └─ minimap2 → samtools → bcftools
-                     ├──────────────> BAM + depth + VCF
-                     └──────────────> low-depth-masked consensus
-                                           ├─ Nextclade genotype/QC (optional)
-                                           └─ ViroFlow comparative report
+ViroFlow includes real ML utilities for cohort-level prioritization:
+
+```bash
+viroflow ml features --results results --output models/cohort_features.csv
+
+viroflow ml train \
+  --features labelled_features.csv \
+  --label-column escape_label \
+  --model models/escape_classifier.joblib \
+  --report models/escape_classifier.metrics.json
+
+viroflow ml predict \
+  --model models/escape_classifier.joblib \
+  --features models/cohort_features.csv \
+  --output models/escape_predictions.csv
+
+viroflow ml anomaly \
+  --features models/cohort_features.csv \
+  --output models/anomaly_scores.csv
 ```
 
-The commands follow the upstream interfaces documented by
-[fastp](https://github.com/OpenGene/fastp),
-[MEGAHIT](https://github.com/voutcn/megahit),
-[minimap2](https://github.com/lh3/minimap2),
-[SAMtools](https://www.htslib.org/doc/samtools.html),
-[BCFtools](https://samtools.github.io/bcftools/bcftools), and
-[Nextclade](https://docs.nextstrain.org/projects/nextclade/en/stable/user/nextclade-cli/usage.html).
+The supervised classifier uses imputation, scaling, balanced logistic regression, stratified
+cross-validation, and saved schema metadata. The anomaly mode uses Isolation Forest for unusual
+genome/QC profiles and ignores common metadata columns such as `label`; pass repeated
+`--exclude-column` values for other non-feature columns. Use externally validated labels for escape,
+drift, phenotype, or vaccine breakthrough modelling; ViroFlow will not invent labels from sequence
+names.
 
-## Quality and interpretation
+See [docs/MODEL_CARD.md](docs/MODEL_CARD.md) and [docs/SCIENTIFIC_SCOPE.md](docs/SCIENTIFIC_SCOPE.md).
 
-- Use a reference appropriate to the virus, segment, assay, and sampling period.
-- Confirm primer-derived workflows have had primer sequences removed with an assay-aware method.
-- Inspect coverage, allele balance, contamination, and ambiguous calls before interpreting a
-  consensus.
-- De novo contigs and reference-guided consensus answer different questions; the workflow keeps
-  both.
-- Sequence divergence alone does not establish antigenic drift, antigenic shift, immune escape,
-  phenotype, transmissibility, severity, or vaccine effectiveness.
-- Never use the synthetic demo profile for research samples.
+## Reproducible datasets
+
+For supported pathogens, download and pin a local Nextclade dataset, then set
+`workflow.nextclade_dataset` to that directory:
+
+```bash
+nextclade dataset get --name sars-cov-2 --output-dir datasets/nextclade/sars-cov-2
+```
+
+Nextclade datasets are versioned; keep the downloaded dataset with your analysis record. ViroFlow
+uses the official Nextclade CLI dataset/run interface, iVar primer/minor-variant workflow, and
+BCFtools mpileup/call/consensus workflow.
+
+Primary documentation:
+[Nextclade datasets](https://docs.nextstrain.org/projects/nextclade/en/stable/user/datasets.html),
+[Nextclade CLI](https://docs.nextstrain.org/projects/nextclade/en/stable/user/nextclade-cli/usage.html),
+[iVar manual](https://andersen-lab.github.io/ivar/html/manualpage.html), and
+[BCFtools manual](https://samtools.github.io/bcftools/bcftools).
 
 ## Development
 
@@ -186,6 +172,11 @@ The commands follow the upstream interfaces documented by
 python -m pip install -e ".[dev]"
 ruff check src tests
 pytest
+python -m build
+twine check dist/*
 ```
 
-Licensed under the [MIT License](LICENSE).
+Synthetic FASTA files live only under `tests/fixtures/synthetic` and are for software tests, not
+research interpretation.
+
+Licensed under the [MIT License](LICENSE). Cite this software with [CITATION.cff](CITATION.cff).

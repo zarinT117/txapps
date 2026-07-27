@@ -72,8 +72,8 @@ def _render_html(result: SampleResult) -> str:
         "<tr>"
         f"<td>{html.escape(name)}</td>"
         f"<td>{len(values.amino_acid_changes)}</td>"
-        f"<td>{html.escape(', '.join(values.antigenic_site_changes) or '—')}</td>"
-        f"<td>{html.escape(', '.join(item['mutation'] for item in values.matched_markers) or '—')}</td>"
+        f"<td>{html.escape(', '.join(values.antigenic_site_changes) or '-')}</td>"
+        f"<td>{html.escape(', '.join(item['mutation'] for item in values.matched_markers) or '-')}</td>"
         "</tr>"
         for name, values in result.proteins.items()
     )
@@ -84,7 +84,7 @@ def _render_html(result: SampleResult) -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ViroFlow report — {html.escape(result.sample)}</title>
+<title>ViroFlow report - {html.escape(result.sample)}</title>
 <style>
 :root{{--ink:#132238;--muted:#64748b;--line:#dbe3ed;--blue:#075985;--bg:#f6f9fc}}
 *{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--ink);
@@ -122,4 +122,3 @@ details pre{{overflow:auto;background:#0f172a;color:#dbeafe;padding:16px;border-
 <section><details><summary>Machine-readable result</summary><pre>{raw_json}</pre></details></section>
 </main></body></html>
 """
-

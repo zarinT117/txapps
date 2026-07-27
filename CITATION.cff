@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use ViroFlow, please cite this software."
+title: "ViroFlow: reproducible viral genome analysis"
+type: software
+authors:
+  - family-names: "Zarin"
+    given-names: "Tasnim"
+    email: "tasnim.2001040@bau.edu.bd"
+repository-code: "https://github.com/zarinT117/txapps"
+url: "https://github.com/zarinT117/txapps"
+license: MIT
+version: 0.2.0
+date-released: 2026-07-27
+keywords:
+  - viral genomics
+  - genome assembly
+  - genotyping
+  - antigenic drift
+  - genomic surveillance
+

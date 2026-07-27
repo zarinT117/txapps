@@ -5,7 +5,7 @@ import pytest
 from viroflow.analysis import _align, analyze_genome
 from viroflow.config import load_yaml
 
-DEMO = Path(__file__).parents[1] / "examples" / "demo"
+DEMO = Path(__file__).parent / "fixtures" / "synthetic"
 
 
 def test_alignment_reports_substitution_and_missing_data():
